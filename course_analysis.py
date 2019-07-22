@@ -83,7 +83,7 @@ class Student(object):
 
         return x, y
 
-    def plot_grades(self):
+    def plot_grades(self, points=True, average=True, threemonth=True):
         """
         Plots basic time series without course code classification
         """
@@ -108,10 +108,13 @@ class Student(object):
         print(np.mean(y))
 
         # begin figure and set parameters
-        plt.plot(series.index.values, rollingaverage, label='%s: Rolling Average' % self.name[0])
+        if average:
+            plt.plot(series.index.values, rollingaverage, label='%s Average' % self.name)
         # plt.plot(x, xx * m + a, label='Straight Fit: %2.6f' % m)
-        plt.plot(monthly, label='%s: 3 Month Average' % self.name[0])
-        plt.scatter(x, y, s=100, alpha=0.2, label='%s: Course of %s' % (self.name[0], self.name))
+        if threemonth:
+            plt.plot(monthly, label='%s: 3 Month Average' % self.name[0], alpha=0.2)
+        if points:
+            plt.scatter(x, y, s=100, alpha=0.2, label='%s: Course of %s' % (self.name[0], self.name))
 
 
     def plot_dist(self):
@@ -242,8 +245,8 @@ class Student(object):
         monthly = series.resample('3M').mean()
         rollingaverage = self.rolling_average(series.values)
 
-
-        plt.plot(series.index.values, rollingaverage, label='Rolling Average')
+        plt.plot(series.index.values, rollingaverage, label='Rolling Average', color='r')
+        plt.text(series.index.values[-1], rollingaverage[-1], str(round(np.mean(y), 3)), color='r')
         # plt.plot(x, xx * m + a, label='Straight Fit: %2.6f' % m)
         plt.plot(monthly, label='3 Month Average')
         plt.xlabel('Date')
@@ -257,35 +260,45 @@ def compare_grades(student_list):
     plt.figure(figsize=(10, 10))
     plt.ylim([5, 10])
     plt.grid()
+    plt.title('Grade Comparison')
     for student in student_list:
-        student.plot_grades()
+        student.plot_grades(points=False, threemonth=False)
+    plt.xlabel('Time')
+    plt.ylabel('Grade')
     plt.legend()
     plt.show()
 
 def main():
+    # enter filenames here for comparison between multiple students
+    student_names = [
+        'P',
+        'R',
+        'T',
+        'Callum'
+    ]
+
+    # initialise student objects for each person in data list
+    student_list = [Student(name) for name in student_names]
+
+    # plot the average grades of the students over time
+    compare_grades(student_list)
+
     # enter filenames to be parsed in list below. Files should be complete source from the printed grades website
     filenames = [
-        'source'
+        'Callum'
     ]
-    student_names = [
-        'piter',
-        'raul',
-        'toli'
-    ]
-
-    #student_list = [Student(name) for name in student_names]
-
-    #compare_grades(student_list)
 
     # uncomment desired plotting functions in loops below.
     for filename in filenames:
         student = Student(filename)
+
+        # start figure for plotting
         plt.figure(figsize=(10, 10))
         plt.ylim([5, 10])
         plt.grid()
-        student.plot_grades()
-        plt.legend()
-        plt.show()
+        #student.plot_grades()
+        #plt.legend()
+        #plt.show()
         #student.plot_dist()
         #plt.show()
         student.plot_subjects()

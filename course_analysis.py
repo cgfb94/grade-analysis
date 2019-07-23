@@ -3,7 +3,7 @@ import datetime as dt
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
+import plotly.graph_objects as go
 import re
 
 
@@ -56,6 +56,7 @@ class Student(object):
             Course(g['course']['code'], g['course']['nameEn'], g['results'][0]['grade'], g['results'][0]['ects'],
                    g['results'][0]['examDate'], g['results'][0]['isPassed']) for g in data['grades']]
         self.sub_dict = self.sort_subjects()
+        self.av_dict = self.course_averages()
 
     def rolling_average(self, time_list):
         """
@@ -187,23 +188,43 @@ class Student(object):
         maths = []
         honours = []
         astronomy = []
+        computing = []
         other = []
-        sub_dict = {'Physics': physics, 'Math': maths, 'Honours': honours, 'Astronomy': astronomy, 'Other': other}
+        sub_dict = {'Physics': physics, 'Maths': maths, 'Honours': honours, 'Astronomy': astronomy,
+                    'Computing': computing, 'Other': other}
 
         for course in self.courses:
-            if course.code[:2] == 'HC':
+            two_letters = course.code[:2]
+            if two_letters == 'HC':
                 honours.append(course)
-            elif course.code[:2] == 'WI' or course.code[:4] == 'WPMA':
+            elif two_letters == 'WI' or course.code[:4] == 'WPMA':
                 maths.append(course)
-            elif course.code[:2] == 'NA' or course.code[:4] == 'WBPH' or course.code[:4] == 'WPPH':
+            elif two_letters == 'NA' or course.code[:4] == 'WBPH' or course.code[:4] == 'WPPH':
                 physics.append(course)
-            elif course.code[:2] == 'ST':
+            elif two_letters == 'ST':
                 astronomy.append(course)
+            elif two_letters == 'RC' or two_letters == 'KI':
+                computing.append(course)
             else:
                 other.append(course)
 
         return sub_dict
 
+    def course_averages(self):
+        av_dict = {}
+        for name, subject in self.sub_dict.items():
+            average, courses = 0, 0
+            for course in subject:
+                if course.passed and course.grade:
+                    average += course.grade
+                    courses += 1
+
+            if average:
+                average /= courses
+
+                av_dict[name] = average
+
+        return av_dict
 
     def plot_subjects(self):
         """
@@ -255,6 +276,29 @@ class Student(object):
         plt.legend()
         plt.show()
 
+    def subject_averages_bar(self):
+        X = np.arange(len(self.av_dict))
+        plt.bar(X, self.av_dict.values(), align='center', width=0.5)
+        labels = ["%2.2f" % entry for entry in self.av_dict.values()]
+        y = [float(entry) for entry in self.av_dict.values()]
+        #for i, v in enumerate(labels):
+        #    plt.text(v + 0.25, i + 3, str(v), color='r', fontweight='bold')
+        #    print(v)
+        plt.xticks(X, self.av_dict.keys())
+        plt.ylim(5, 10)
+        plt.show()
+        x = [str(entry) for entry in self.av_dict.keys()]
+        # Use textposition='auto' for direct text
+        fig = go.Figure(data=[go.Bar(
+            x=x, y=y,
+            text=labels,
+            textposition='auto',
+        )])
+
+        fig.update_yaxes(range=[1, 10])
+
+        fig.show()
+
 
 def compare_grades(student_list):
     plt.figure(figsize=(10, 10))
@@ -271,9 +315,9 @@ def compare_grades(student_list):
 def main():
     # enter filenames here for comparison between multiple students
     student_names = [
-        'P',
-        'R',
-        'T',
+        'Anon1',
+        'Anon2',
+        'Anon3',
         'Callum'
     ]
 
@@ -301,8 +345,10 @@ def main():
         #plt.show()
         #student.plot_dist()
         #plt.show()
-        student.plot_subjects()
-        student.pie()
+        #student.plot_subjects()
+        #student.pie()
+        student.subject_averages_bar()
+        print(student.sub_dict)
 
 
 if __name__ == '__main__':
